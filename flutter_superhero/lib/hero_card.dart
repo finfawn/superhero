@@ -1,9 +1,10 @@
 class HeroCard {
-  final int id;
+  final String id;
   final String name;
   final String imageUrl;
   final Map<String, dynamic> powerstats;
   final Map<String, dynamic> biography;
+  final String alignmentEmoji;
 
   HeroCard({
     required this.id,
@@ -11,15 +12,17 @@ class HeroCard {
     required this.imageUrl,
     required this.powerstats,
     required this.biography,
+    required this.alignmentEmoji,
   });
 
   factory HeroCard.fromJson(Map<String, dynamic> json) {
     return HeroCard(
-      id: int.parse(json['id']),
-      name: json['name'],
-      imageUrl: json['image']['url'],
-      powerstats: json['powerstats'],
-      biography: json['biography'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown Hero',
+      imageUrl: json['imageUrl'] ?? json['image']?['url'] ?? '',
+      powerstats: Map<String, dynamic>.from(json['powerstats'] ?? {}),
+      biography: Map<String, dynamic>.from(json['biography'] ?? {}),
+      alignmentEmoji: json['alignmentEmoji'] ?? '❓',
     );
   }
 
@@ -32,36 +35,12 @@ class HeroCard {
     return sum;
   }
 
-  int getPowerStat(String stat) {
-    final value = powerstats[stat.toLowerCase()];
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'imageUrl': imageUrl,
     'powerstats': powerstats,
     'biography': biography,
+    'alignmentEmoji': alignmentEmoji,
   };
-
-  static Future<void> random() async {}
-
-  String get alignmentEmoji {
-    switch (biography['alignment']?.toLowerCase()) {
-      case 'good': return '🦸';
-      case 'bad': return '🦹';
-      default: return '🟰';
-    }
-  }
-
-  String get publisherLogo {
-    switch (biography['publisher']?.toLowerCase()) {
-      case 'dc comics': return 'assets/dc_logo.png';
-      case 'marvel comics': return 'assets/marvel_logo.png';
-      default: return 'assets/default_logo.png';
-    }
-  }
 }

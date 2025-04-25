@@ -57,6 +57,31 @@ class SuperheroService {
     }
   }
 
+  // Add this method to SuperheroService class
+  Future<Map<String, dynamic>> fetchHeroDetails(int id, String endpoint) async {
+    final url = 'https://superheroapi.com/api/$apiToken/$id/$endpoint';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['response'] == 'error') {
+          throw Exception(data['error']);
+        }
+
+        return data;
+      } else {
+        throw Exception(
+          'Failed to fetch hero details: Status ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Network error while fetching hero details: $e');
+    }
+  }
+
   Future<List<HeroCard>> getRandomHeroes(int count) async {
     if (count <= 0) throw ArgumentError('Count must be greater than 0');
 
@@ -86,7 +111,9 @@ class SuperheroService {
     }
 
     if (heroes.length < count) {
-      print('Warning: Only fetched ${heroes.length} heroes out of $count requested');
+      print(
+        'Warning: Only fetched ${heroes.length} heroes out of $count requested',
+      );
     }
 
     return heroes;
@@ -101,13 +128,13 @@ class SuperheroService {
     if (query.isEmpty) return [];
 
     final url = 'https://superheroapi.com/api/$apiToken/search/$query';
-    
+
     try {
       final response = await http.get(Uri.parse(url));
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['response'] == 'error') {
           throw Exception(data['error']);
         }

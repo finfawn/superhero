@@ -52,8 +52,8 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
     _playerDeck = List.from(widget.playerDeck)..shuffle();
     _computerDeck = List.from(widget.computerDeck)..shuffle();
     _service = SuperheroService(widget.apiToken);
-    _usedHeroIds.addAll(_playerDeck.map((e) => e.id));
-    _usedHeroIds.addAll(_computerDeck.map((e) => e.id));
+    _usedHeroIds.addAll(_playerDeck.map((e) => int.parse(e.id)));
+    _usedHeroIds.addAll(_computerDeck.map((e) => int.parse(e.id)));
     _remainingCards -= _usedHeroIds.length;
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     
@@ -638,7 +638,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                 // Battle area
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.only(bottom: 80),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -647,7 +647,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: AspectRatio(
-                              aspectRatio: 0.6,
+                              aspectRatio: 0.7,
                               child: _buildBattleCard(_computerCard, isPlayer: false),
                             ),
                           ),
@@ -676,7 +676,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: AspectRatio(
-                              aspectRatio: 0.6,
+                              aspectRatio: 0.7,
                               child: _buildBattleCard(_playerCard, isPlayer: true),
                             ),
                           ),
@@ -751,7 +751,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                       child: GridView.builder(
                         padding: EdgeInsets.all(12),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
+                          crossAxisCount: 5,
                           childAspectRatio: 0.7,
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,

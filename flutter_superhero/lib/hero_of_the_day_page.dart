@@ -83,15 +83,17 @@ class _HeroOfTheDayPageState extends State<HeroOfTheDayPage> {
   );
 }
 
-  void _checkIfBookmarked() async {
+void _checkIfBookmarked() async {
+  if (_hero == null) return;
+  
   final prefs = await SharedPreferences.getInstance();
   final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
   
-  if (!mounted) return; // Check if widget is still mounted
+  if (!mounted) return;
   
   setState(() {
     _isBookmarked = bookmarkedHeroes.any(
-      (hero) => jsonDecode(hero)['id'] == _hero.id
+      (hero) => jsonDecode(hero)['id'] == _hero.id.toString()
     );
   });
 }
