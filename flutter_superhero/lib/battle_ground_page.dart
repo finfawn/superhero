@@ -24,7 +24,55 @@ class BattlegroundPage extends StatefulWidget {
   State<BattlegroundPage> createState() => _BattlegroundPageState();
 }
 
-class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerProviderStateMixin {
+class DiceWidget extends StatelessWidget {
+  final int value;
+  final double size;
+  final bool isRolling;
+
+  const DiceWidget({
+    super.key, 
+    required this.value, 
+    this.size = 60,
+    this.isRolling = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isRolling ? 20 : 10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: isRolling ? 10 : 5,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Center(
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 100),
+          scale: isRolling ? 1.2 : 1.0,
+          child: Text(
+            value.toString(),
+            style: TextStyle(
+              fontSize: size * 0.4,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BattlegroundPageState extends State<BattlegroundPage>
+    with SingleTickerProviderStateMixin {
   late List<HeroCard> _playerDeck;
   late List<HeroCard> _computerDeck;
   HeroCard? _playerCard;
@@ -41,6 +89,11 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
   late ConfettiController _confettiController;
   bool _showDiceResult = false;
   bool _showDeckDrawer = false;
+  bool _showDiceRollModal = false;
+  int _diceAnimationValue = 1;
+  bool _isDiceRolling = false;
+  bool _showDiceResultModal = false;
+  String _diceResultMessage = '';
 
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -55,17 +108,19 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
     _usedHeroIds.addAll(_playerDeck.map((e) => int.parse(e.id)));
     _usedHeroIds.addAll(_computerDeck.map((e) => int.parse(e.id)));
     _remainingCards -= _usedHeroIds.length;
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
-    
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _controller.reverse();
-        }
-      });
-      
+      if (status == AnimationStatus.completed) {
+        _controller.reverse();
+      }
+    });
+
     _animation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.5), weight: 50.0),
       TweenSequenceItem(tween: Tween(begin: 1.5, end: 1.0), weight: 50.0),
@@ -107,12 +162,15 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
       _loading = true;
       _playerCard = _playerDeck[index];
       _playerDeck.removeAt(index);
-      _computerCard = _computerDeck.isNotEmpty ? _computerDeck.removeLast() : null;
+      _computerCard =
+          _computerDeck.isNotEmpty ? _computerDeck.removeLast() : null;
       _showFront = false;
       _roundResult = '';
       _showBattleResult = false;
       _showDiceResult = false;
       _showDeckDrawer = false;
+      _showDiceRollModal = false; // Add this
+      _isDiceRolling = false; // Add this
     });
 
     await _controller.forward(from: 0);
@@ -156,22 +214,75 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
   }
 
   Future<void> _rollDiceAndDrawCards(bool isPlayerWinner) async {
-    final random = Random();
-    setState(() {
+    if (isPlayerWinner) {
+      // Show modal for player to roll dice
+      setState(() {
+        _showDiceRollModal = true;
+        _isDiceRolling = false;
+        _diceAnimationValue = 1;
+      });
+    } else {
+      // Computer rolls automatically
+      final random = Random();
       _diceRoll = random.nextInt(6) + 1;
       _showDiceResult = true;
+
+      await Future.delayed(const Duration(seconds: 1));
+      await _drawCardsForWinner(isPlayerWinner, _diceRoll!);
+    }
+  }
+
+  Future<void> _playerRollDice() async {
+    setState(() {
+      _isDiceRolling = true;
+      _showDiceRollModal = false;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    final random = Random();
 
+    // Animate dice rolling with more visual feedback
+    for (int i = 0; i < 15; i++) {
+      // Increased from 10 to 15 for longer animation
+      if (!mounted) return;
+      setState(() {
+        _diceAnimationValue = random.nextInt(6) + 1;
+      });
+      await Future.delayed(
+        Duration(milliseconds: 100 + (i * 10)),
+      ); // Slowing down
+    }
+
+    // Final dice value
+    _diceRoll = random.nextInt(6) + 1;
+    setState(() {
+      _diceAnimationValue = _diceRoll!;
+      _diceResultMessage =
+          'You rolled a $_diceRoll!\nYou receive $_diceRoll new cards!';
+      _showDiceResultModal = true;
+    });
+
+    await Future.delayed(
+      const Duration(seconds: 2),
+    ); // Show result for 2 seconds
+
+    setState(() {
+      _showDiceResultModal = false;
+    });
+
+    await _drawCardsForWinner(true, _diceRoll!);
+  }
+
+  Future<void> _drawCardsForWinner(bool isPlayerWinner, int count) async {
     try {
       List<HeroCard> newCards = [];
       int attempts = 0;
       const maxAttempts = 20;
 
-      while (newCards.length < _diceRoll! && attempts < maxAttempts && _remainingCards > 0) {
+      while (newCards.length < count &&
+          attempts < maxAttempts &&
+          _remainingCards > 0) {
         attempts++;
-        final randomId = random.nextInt(731) + 1;
+        final randomId = Random().nextInt(731) + 1;
         if (!_usedHeroIds.contains(randomId)) {
           final hero = await _service.fetchSuperhero(randomId);
           if (hero != null) {
@@ -203,10 +314,19 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
         _loading = false;
         _showDiceResult = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error drawing new cards: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error drawing new cards: $e')));
     }
+    setState(() {
+      _showDiceResult = true;
+      _diceResultMessage = 'Added $_diceRoll new cards to your deck!';
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      _showDiceResult = false;
+    });
   }
 
   Widget _buildPowerStatRow(String label, dynamic value) {
@@ -245,8 +365,8 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
               numValue > 70
                   ? Colors.greenAccent
                   : numValue > 40
-                      ? Colors.orangeAccent
-                      : Colors.redAccent,
+                  ? Colors.orangeAccent
+                  : Colors.redAccent,
             ),
             minHeight: 4,
           ),
@@ -266,7 +386,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
             color: color.withOpacity(0.5),
             blurRadius: 10,
             spreadRadius: 1,
-          )
+          ),
         ],
         gradient: LinearGradient(
           colors: [color.withOpacity(0.85), color.withOpacity(0.65)],
@@ -280,28 +400,25 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
           fit: StackFit.expand,
           children: [
             // Hero Image with placeholder
-            hero.imageUrl.isNotEmpty 
+            hero.imageUrl.isNotEmpty
                 ? Image.network(
-                    hero.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                  )
+                  hero.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                )
                 : _buildPlaceholderImage(),
-            
+
             // Dark overlay for better text visibility
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                 ),
               ),
             ),
-            
+
             // Content
             Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -312,7 +429,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                   child: Text(
                     hero.name,
                     style: GoogleFonts.bangers(
-                      fontSize: 22, 
+                      fontSize: 22,
                       color: Colors.white,
                       shadows: [
                         Shadow(
@@ -327,7 +444,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                
+
                 // Power Stats at bottom
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -344,13 +461,15 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                       Text(
                         'Total Power: ${_calculateTotalPower(hero)}',
                         style: GoogleFonts.poppins(
-                          fontSize: 14, 
-                          color: Colors.white, 
+                          fontSize: 14,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      ...hero.powerstats.entries.map((e) => _buildPowerStatRow(e.key, e.value)),
+                      ...hero.powerstats.entries.map(
+                        (e) => _buildPowerStatRow(e.key, e.value),
+                      ),
                     ],
                   ),
                 ),
@@ -368,57 +487,59 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
       animation: _animation,
       builder: (context, child) {
         return Transform(
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.001)
-            ..rotateY(_animation.value * 3.141592),
+          transform:
+              Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(_animation.value * 3.141592),
           alignment: Alignment.center,
-          child: _showFront && hero != null
-              ? Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: teamColor.withOpacity(0.8),
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: teamColor.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
+          child:
+              _showFront && hero != null
+                  ? Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: teamColor.withOpacity(0.8),
+                        width: 3,
                       ),
-                    ],
-                  ),
-                  child: _buildHeroCard(hero, isPlayer: isPlayer),
-                )
-              : Container(
-                  decoration: BoxDecoration(
-                    color: teamColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: teamColor.withOpacity(0.5),
-                      width: 2,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shield,
-                        size: 60,
-                        color: teamColor.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isPlayer ? 'YOUR HERO' : 'OPPONENT',
-                        style: GoogleFonts.bangers(
-                          fontSize: 16,
-                          color: teamColor.withOpacity(0.7),
+                      boxShadow: [
+                        BoxShadow(
+                          color: teamColor.withOpacity(0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
+                      ],
+                    ),
+                    child: _buildHeroCard(hero, isPlayer: isPlayer),
+                  )
+                  : Container(
+                    decoration: BoxDecoration(
+                      color: teamColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: teamColor.withOpacity(0.5),
+                        width: 2,
                       ),
-                    ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shield,
+                          size: 60,
+                          color: teamColor.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isPlayer ? 'YOUR HERO' : 'OPPONENT',
+                          style: GoogleFonts.bangers(
+                            fontSize: 16,
+                            color: teamColor.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
         );
       },
     );
@@ -441,11 +562,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
             ],
           ),
           boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 4,
-              spreadRadius: 1,
-            )
+            BoxShadow(color: Colors.black26, blurRadius: 4, spreadRadius: 1),
           ],
         ),
         child: Stack(
@@ -454,15 +571,16 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
             // Hero Image with placeholder
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: hero.imageUrl.isNotEmpty
-                  ? Image.network(
-                      hero.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                    )
-                  : _buildPlaceholderImage(),
+              child:
+                  hero.imageUrl.isNotEmpty
+                      ? Image.network(
+                        hero.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                      )
+                      : _buildPlaceholderImage(),
             ),
-            
+
             // Dark overlay
             Container(
               decoration: BoxDecoration(
@@ -470,23 +588,25 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                 ),
               ),
             ),
-            
+
             // Content
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(12),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -530,7 +650,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
         title: Text(
           "⚔️ Superhero Battle",
           style: GoogleFonts.bangers(
-            fontSize: 24, 
+            fontSize: 24,
             color: Colors.white,
             shadows: [
               Shadow(
@@ -576,32 +696,20 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                           _roundResult,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.bangers(
-                            fontSize: 20, 
+                            fontSize: 20,
                             color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    if (_showDiceResult)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        color: Colors.black.withOpacity(0.5),
-                        child: Text(
-                          'Dice Roll: $_diceRoll! Drawing $_diceRoll new cards...',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                   ],
                 ),
-                
+
                 // Deck counters and remaining cards
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -609,7 +717,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Your Deck: ${_playerDeck.length}', 
+                            'Your Deck: ${_playerDeck.length}',
                             style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -625,7 +733,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                         ],
                       ),
                       Text(
-                        'Opponent: ${_computerDeck.length}', 
+                        'Opponent: ${_computerDeck.length}',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -634,7 +742,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                     ],
                   ),
                 ),
-                
+
                 // Battle area
                 Expanded(
                   child: Padding(
@@ -648,7 +756,10 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                             padding: const EdgeInsets.all(8.0),
                             child: AspectRatio(
                               aspectRatio: 0.7,
-                              child: _buildBattleCard(_computerCard, isPlayer: false),
+                              child: _buildBattleCard(
+                                _computerCard,
+                                isPlayer: false,
+                              ),
                             ),
                           ),
                         ),
@@ -677,7 +788,10 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                             padding: const EdgeInsets.all(8.0),
                             child: AspectRatio(
                               aspectRatio: 0.7,
-                              child: _buildBattleCard(_playerCard, isPlayer: true),
+                              child: _buildBattleCard(
+                                _playerCard,
+                                isPlayer: true,
+                              ),
                             ),
                           ),
                         ),
@@ -687,7 +801,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                 ),
               ],
             ),
-            
+
             // Deck drawer
             Positioned(
               bottom: 0,
@@ -707,7 +821,9 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.deepPurple.shade700,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.3),
@@ -720,7 +836,9 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _showDeckDrawer ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                            _showDeckDrawer
+                                ? Icons.keyboard_arrow_down
+                                : Icons.keyboard_arrow_up,
                             color: Colors.white,
                             size: 30,
                           ),
@@ -737,17 +855,22 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                       ),
                     ),
                   ),
-                  
+
                   // Deck drawer content
                   AnimatedContainer(
                     duration: Duration(milliseconds: 300),
-                    height: _showDeckDrawer ? MediaQuery.of(context).size.height * 0.5 : 0,
+                    height:
+                        _showDeckDrawer
+                            ? MediaQuery.of(context).size.height * 0.5
+                            : 0,
                     width: MediaQuery.of(context).size.width * 0.6, // 60% width
                     decoration: BoxDecoration(
                       color: Colors.deepPurple.shade800,
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                       child: GridView.builder(
                         padding: EdgeInsets.all(12),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -766,16 +889,149 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                 ],
               ),
             ),
-            
+
             // Confetti
             ConfettiWidget(
               confettiController: _confettiController,
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
-              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple,
+              ],
             ),
-            
-            // Game over overlay
+
+            if (_showDiceResultModal)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade800.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'DICE RESULT',
+                        style: GoogleFonts.bangers(
+                          fontSize: 28,
+                          color: Colors.amber,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        transform:
+                            Matrix4.identity()
+                              ..scale(_isDiceRolling ? 1.1 : 1.0),
+                        child: DiceWidget(
+                          value: _diceAnimationValue,
+                          size: 120,
+                          isRolling: _isDiceRolling,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _diceResultMessage,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      if (!_isDiceRolling)
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _showDiceResultModal = false;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 15,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: const Text(
+                            'CONTINUE',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            // Dice Roll Modal
+            if (_showDiceRollModal)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade800.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber, width: 2),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'ROLL FOR NEW CARDS!',
+                        style: GoogleFonts.bangers(
+                          fontSize: 24,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      DiceWidget(value: _diceAnimationValue, size: 100),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _isDiceRolling ? null : _playerRollDice,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 30,
+                            vertical: 15,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: Text(
+                          _isDiceRolling ? 'ROLLING...' : 'ROLL DICE',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (gameOver)
               Center(
                 child: Container(
@@ -785,9 +1041,11 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _playerDeck.isEmpty ? "💀 You ran out of cards!" : "🎉 You defeated the opponent!",
+                        _playerDeck.isEmpty
+                            ? "💀 You ran out of cards!"
+                            : "🎉 You defeated the opponent!",
                         style: GoogleFonts.bangers(
-                          fontSize: 28, 
+                          fontSize: 28,
                           color: Colors.white,
                           shadows: [
                             Shadow(
@@ -800,27 +1058,35 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () => Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BattlegroundPage(
-                              playerDeck: List.from(widget.playerDeck)..shuffle(),
-                              computerDeck: List.from(widget.computerDeck)..shuffle(),
-                              apiToken: widget.apiToken,
+                        onPressed:
+                            () => Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => BattlegroundPage(
+                                      playerDeck: List.from(widget.playerDeck)
+                                        ..shuffle(),
+                                      computerDeck: List.from(
+                                        widget.computerDeck,
+                                      )..shuffle(),
+                                      apiToken: widget.apiToken,
+                                    ),
+                              ),
                             ),
-                          ),
-                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                         child: Text(
-                          "PLAY AGAIN", 
+                          "PLAY AGAIN",
                           style: GoogleFonts.bangers(
-                            color: Colors.deepPurple, 
+                            color: Colors.deepPurple,
                             fontSize: 18,
                           ),
                         ),
@@ -829,7 +1095,7 @@ class _BattlegroundPageState extends State<BattlegroundPage> with SingleTickerPr
                   ),
                 ),
               ),
-            
+
             // Loading indicator
             if (_loading)
               const Center(
