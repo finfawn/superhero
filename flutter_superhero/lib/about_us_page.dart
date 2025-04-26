@@ -27,10 +27,11 @@ class _AboutUsPageState extends State<AboutUsPage> {
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
-          builder: (BuildContext context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (BuildContext context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         centerTitle: true,
         title: const Text('About Us'),
@@ -41,7 +42,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
           ),
         ],
       ),
-      drawer: AppDrawer(apiToken: widget.apiToken), // Fixed: changed apiToken to widget.apiToken
+      drawer: AppDrawer(apiToken: widget.apiToken),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -56,6 +57,8 @@ class _AboutUsPageState extends State<AboutUsPage> {
               const SizedBox(height: 24),
               _buildHeader(),
               _buildGameDescription(),
+              _buildGameInstructions(),
+              _buildGameMechanics(),
               _buildTeamTitle(),
               _buildTeamGrid(),
               _buildTechStack(),
@@ -101,10 +104,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
         const SizedBox(height: 8),
         Text(
           'Version 1.1.0',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
         ),
       ],
     );
@@ -153,6 +153,130 @@ class _AboutUsPageState extends State<AboutUsPage> {
     );
   }
 
+  Widget _buildGameInstructions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Card(
+        elevation: 8,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(color: Colors.deepPurple.shade300, width: 2),
+        ),
+        color: Colors.white.withOpacity(0.9),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'HOW TO PLAY',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple.shade800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildMechanicItem(
+                '1️⃣ Select',
+                'Choose a hero from your deck to battle',
+              ),
+              _buildMechanicItem(
+                '2️⃣ Battle',
+                'Your hero faces off against a random opponent hero',
+              ),
+              _buildMechanicItem(
+                '3️⃣ Compare',
+                'System compares total power stats of both heroes',
+              ),
+              _buildMechanicItem(
+                '4️⃣ Win/Lose',
+                'Hero with higher total power wins the round',
+              ),
+              _buildMechanicItem(
+                '5️⃣ Reward',
+                'Winner rolls a die and draws new cards',
+              ),
+              _buildMechanicItem(
+                '🏆 Victory',
+                'Game ends when a player loses all their cards - last player standing wins!',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '/n'
+                '             Tip: Focus on building a balanced deck with heroes of different power types!             ',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.deepPurple.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameMechanics() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(color: Colors.deepPurple.shade300, width: 2),
+        ),
+        color: Colors.white.withOpacity(0.9),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'GAME MECHANICS',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple.shade800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildMechanicItem(
+                '🎲 Dice Rolls',
+                'Winner rolls a 6-sided die to determine how many new cards they draw',
+              ),
+              _buildMechanicItem(
+                '🃏 Card Stats',
+                'Each hero has 6 power stats (Intelligence, Strength, Speed, Durability, Power, Combat)',
+              ),
+              _buildMechanicItem(
+                '⚔️ Total Power',
+                'Sum of all power stats determines battle outcome',
+              ),
+              _buildMechanicItem(
+                '🏁 Game End',
+                'Game ends when a player runs out of cards in their deck',
+              ),
+              _buildMechanicItem(
+                '🔄 Card Pool',
+                '731 unique superheroes available to collect',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Note: Ties result in no cards being drawn for either player',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.deepPurple.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTeamTitle() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -179,7 +303,14 @@ class _AboutUsPageState extends State<AboutUsPage> {
             _buildTeamMemberCard(
               name: 'Jhemar Anablon',
               heroId: 100,
-              stats: {'Intelligence': 0, 'Strength': 1, 'Speed': 1, 'Durability': 1, 'Power': 1, 'Combat': 1},
+              stats: {
+                'Intelligence': 0,
+                'Strength': 1,
+                'Speed': 1,
+                'Durability': 1,
+                'Power': 1,
+                'Combat': 1,
+              },
               color: Colors.deepPurple,
               cardWidth: 200,
             ),
@@ -187,7 +318,14 @@ class _AboutUsPageState extends State<AboutUsPage> {
             _buildTeamMemberCard(
               name: 'Jezreel Douglas',
               heroId: 567,
-              stats: {'Intelligence': 100, 'Strength': 100, 'Speed': 100, 'Durability': 100, 'Power': 100, 'Combat': 100},
+              stats: {
+                'Intelligence': 100,
+                'Strength': 100,
+                'Speed': 100,
+                'Durability': 100,
+                'Power': 100,
+                'Combat': 100,
+              },
               color: Colors.red,
               cardWidth: 200,
             ),
@@ -195,7 +333,14 @@ class _AboutUsPageState extends State<AboutUsPage> {
             _buildTeamMemberCard(
               name: 'Ezekiel Palitogen Jr.',
               heroId: 472,
-              stats: {'Intelligence': 95, 'Strength': 85, 'Speed': 60, 'Durability': 85, 'Power': 100, 'Combat': 65},
+              stats: {
+                'Intelligence': 95,
+                'Strength': 85,
+                'Speed': 60,
+                'Durability': 85,
+                'Power': 100,
+                'Combat': 65,
+              },
               color: Colors.orange,
               cardWidth: 200,
             ),
@@ -203,7 +348,14 @@ class _AboutUsPageState extends State<AboutUsPage> {
             _buildTeamMemberCard(
               name: 'John Rendell Bacasen',
               heroId: 700,
-              stats: {'Intelligence': 90, 'Strength': 80, 'Speed': 70, 'Durability': 75, 'Power': 85, 'Combat': 95},
+              stats: {
+                'Intelligence': 90,
+                'Strength': 80,
+                'Speed': 70,
+                'Durability': 75,
+                'Power': 85,
+                'Combat': 95,
+              },
               color: Colors.blue,
               cardWidth: 200,
             ),
@@ -211,7 +363,14 @@ class _AboutUsPageState extends State<AboutUsPage> {
             _buildTeamMemberCard(
               name: 'Brenelyn Marcos',
               heroId: 400,
-              stats: {'Intelligence': 85, 'Strength': 75, 'Speed': 80, 'Durability': 70, 'Power': 95, 'Combat': 80},
+              stats: {
+                'Intelligence': 85,
+                'Strength': 75,
+                'Speed': 80,
+                'Durability': 70,
+                'Power': 95,
+                'Combat': 80,
+              },
               color: Colors.purple,
               cardWidth: 200,
             ),
@@ -264,123 +423,126 @@ class _AboutUsPageState extends State<AboutUsPage> {
   }
 
   Widget _buildTeamMemberCard({
-  required String name,
-  required int heroId,
-  required Map<String, int> stats,
-  required Color color,
-  double cardWidth = 200,
-}) {
-  final totalPower = stats.values.fold(0, (sum, value) => sum + value);
-  
-  return FutureBuilder<String?>(
-    future: _getHeroImageUrl(heroId, widget.apiToken),
-    builder: (context, snapshot) {
-      final imageUrl = snapshot.data ?? '';
-      
-      return SizedBox(
-        width: cardWidth,
-        child: Card(
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
+    required String name,
+    required int heroId,
+    required Map<String, int> stats,
+    required Color color,
+    double cardWidth = 200,
+  }) {
+    final totalPower = stats.values.fold(0, (sum, value) => sum + value);
+
+    return FutureBuilder<String?>(
+      future: _getHeroImageUrl(heroId, widget.apiToken),
+      builder: (context, snapshot) {
+        final imageUrl = snapshot.data ?? '';
+
+        return SizedBox(
+          width: cardWidth,
+          child: Card(
+            elevation: 6,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.5),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                )
-              ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  imageUrl.isNotEmpty 
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                        )
-                      : _buildPlaceholderImage(),
-                  
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          name,
-                          style: GoogleFonts.bangers(
-                            fontSize: 22, 
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 2,
-                                color: Colors.black.withOpacity(0.5),
-                                offset: const Offset(1, 1),
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(20),
-                            bottomRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Total Power: $totalPower',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14, 
-                                color: Colors.white, 
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            ...stats.entries.map((e) => _buildPowerStatRow(e.key, e.value)),
-                          ],
-                        ),
-                      ),
-                    ],
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
                   ),
                 ],
               ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    imageUrl.isNotEmpty
+                        ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => _buildPlaceholderImage(),
+                        )
+                        : _buildPlaceholderImage(),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            name,
+                            style: GoogleFonts.bangers(
+                              fontSize: 22,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 2,
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(1, 1),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Total Power: $totalPower',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              ...stats.entries.map(
+                                (e) => _buildPowerStatRow(e.key, e.value),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   Future<String?> _getHeroImageUrl(int heroId, String apiToken) async {
     try {
@@ -400,10 +562,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
             flex: 3,
             child: Text(
               statName,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                color: Colors.white,
-              ),
+              style: GoogleFonts.poppins(fontSize: 10, color: Colors.white),
             ),
           ),
           Expanded(
@@ -411,7 +570,9 @@ class _AboutUsPageState extends State<AboutUsPage> {
             child: LinearProgressIndicator(
               value: value / 100,
               backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple.shade300),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Colors.deepPurple.shade300,
+              ),
             ),
           ),
           Expanded(
@@ -460,6 +621,61 @@ class _AboutUsPageState extends State<AboutUsPage> {
       shadowColor: Colors.deepPurple.shade200,
     );
   }
+
+  Widget _buildInstructionStep(String emoji, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: Colors.deepPurple.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMechanicItem(String prefix, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$prefix ',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple.shade900,
+                  ),
+                ),
+                TextSpan(
+                  text: description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.deepPurple.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _buildPlaceholderImage extends StatelessWidget {
@@ -470,11 +686,7 @@ class _buildPlaceholderImage extends StatelessWidget {
     return Container(
       color: Colors.grey.shade300,
       child: const Center(
-        child: Icon(
-          Icons.image,
-          color: Colors.grey,
-          size: 50,
-        ),
+        child: Icon(Icons.image, color: Colors.grey, size: 50),
       ),
     );
   }

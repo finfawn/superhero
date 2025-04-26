@@ -1,4 +1,3 @@
-// login_page.dart
 import 'package:flutter/material.dart';
 import 'hero_of_the_day_page.dart';
 
@@ -13,17 +12,36 @@ class _LoginPageState extends State<LoginPage> {
   final _controller = TextEditingController();
   String? _error;
   bool _obscureText = true;
+  bool _isLoading = false;
 
-  void _submitToken() {
+  Future<void> _submitToken() async {
     final token = _controller.text.trim();
     if (token.isEmpty) {
-      setState(() => _error = "Please enter your API token.");
+      setState(() => _error = "Please enter your API token");
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+    
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => HeroOfTheDayPage(apiToken: token)),
+      MaterialPageRoute(
+        builder: (context) => HeroOfTheDayPage(apiToken: token),
+      ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -37,187 +55,173 @@ class _LoginPageState extends State<LoginPage> {
             colors: [
               Colors.deepPurple.shade900,
               Colors.purple.shade800,
-              Colors.deepPurple.shade700,
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            // Superhero silhouette background
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Opacity(
-                opacity: 0.2,
-                child: Image.asset(
-                  'assets/superhero-silhouette-art-6.jpg', // Add this asset to your project
-                  width: MediaQuery.of(context).size.width * 0.8,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Hero Icon
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.amber,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user,
+                    size: 48,
+                    color: Colors.amber,
+                  ),
                 ),
-              ),
-            ),
-            
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Superhero logo/icon
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.amber,
-                          width: 3,
+
+                const SizedBox(height: 32),
+
+                // Title
+                Text(
+                  'SUPERHERO BATTLE',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Subtitle
+                Text(
+                  'Enter your API token',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Token Input Field (more compact)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 280, // Fixed width for better control
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    obscureText: _obscureText,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      isDense: true, // Reduces vertical padding
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.2),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      labelText: 'API Token',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      prefixIcon: const Icon(Icons.vpn_key, 
+                        color: Colors.white70, 
+                        size: 20), // Smaller icon
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureText 
+                              ? Icons.visibility 
+                              : Icons.visibility_off,
+                          color: Colors.white70,
+                          size: 20,
                         ),
+                        onPressed: () => setState(() => _obscureText = !_obscureText),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                      child: const Icon(
-                        Icons.supervisor_account,
-                        size: 60,
-                        color: Colors.amber,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12, // Reduced vertical padding
+                        horizontal: 16,
                       ),
                     ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Title
-                    Text(
-                      'SUPERHERO CARD GAME',
+                  ),
+                ),
+
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      _error!,
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10.0,
-                            color: Colors.black.withOpacity(0.5),
-                            offset: const Offset(2.0, 2.0),
-                          ),
-                        ],
+                        color: Colors.red.shade300,
+                        fontSize: 12,
                       ),
                     ),
-                    
-                    const SizedBox(height: 10),
-                    
-                    // Subtitle
-                    Text(
-                      'Enter your API token to begin',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.8),
+                  ),
+
+                const SizedBox(height: 24),
+
+                // Login Button (more compact)
+                SizedBox(
+                  width: 200, // Fixed width
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submitToken,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12, // Reduced height
+                        horizontal: 24,
                       ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 2,
                     ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Token input field (fixed width)
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.65, // 65% of screen width
-                      child: TextField(
-                        controller: _controller,
-                        obscureText: _obscureText,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.black.withOpacity(0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                          labelText: 'API Token',
-                          labelStyle: const TextStyle(color: Colors.white70),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.white70),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureText ? Icons.visibility : Icons.visibility_off,
-                              color: Colors.white70,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureText = !_obscureText;
-                              });
-                            },
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Start Game button
-                    ElevatedButton(
-                      onPressed: _submitToken,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        elevation: 8,
-                        shadowColor: Colors.amber.withOpacity(0.5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'START GAME',
+                          )
+                        : const Text(
+                            'START',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.white.withOpacity(0.5),
-                                  blurRadius: 2,
-                                  offset: const Offset(1, 1),
-                                ),
-                              ],
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Help text
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'Get your API token from superheroapi.com',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 16),
+
+                // Help Text
+                TextButton(
+                  onPressed: () {
+                    // Add link opening functionality here
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                  ),
+                  child: Text(
+                    'Get API token from superheroapi.com',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
