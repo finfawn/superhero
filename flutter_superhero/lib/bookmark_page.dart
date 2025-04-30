@@ -30,40 +30,44 @@ class _BookmarkPageState extends State<BookmarkPage> {
   }
 
   Future<void> _loadBookmarks() async {
-  final prefs = await SharedPreferences.getInstance();
-  final bookmarked = prefs.getStringList(_bookmarksKey) ?? [];
-  
-  setState(() {
-    _bookmarkedHeroes = bookmarked.map((String heroJson) {
-      try {
-        final Map<String, dynamic> heroMap = json.decode(heroJson);
-        return HeroCard.fromJson(heroMap);
-      } catch (e) {
-        return HeroCard(
-          id: 'error',
-          name: 'Invalid Hero',
-          imageUrl: '',
-          powerstats: {},
-          biography: {},
-          alignmentEmoji: '❓',
-        );
-      }
-    }).where((hero) => hero.id.isNotEmpty).toList();
-  });
-}
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarked = prefs.getStringList(_bookmarksKey) ?? [];
+
+    setState(() {
+      _bookmarkedHeroes =
+          bookmarked
+              .map((String heroJson) {
+                try {
+                  final Map<String, dynamic> heroMap = json.decode(heroJson);
+                  return HeroCard.fromJson(heroMap);
+                } catch (e) {
+                  return HeroCard(
+                    id: 'error',
+                    name: 'Invalid Hero',
+                    imageUrl: '',
+                    powerstats: {},
+                    biography: {},
+                    alignmentEmoji: '❓',
+                  );
+                }
+              })
+              .where((hero) => hero.id.isNotEmpty)
+              .toList();
+    });
+  }
 
   Future<void> _removeBookmark(HeroCard hero) async {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
-    
+
     bookmarkedHeroes.removeWhere((h) => jsonDecode(h)['id'] == hero.id);
     await prefs.setStringList(_bookmarksKey, bookmarkedHeroes);
-    
+
     if (mounted) {
       setState(() {
         _bookmarkedHeroes.removeWhere((h) => h.id == hero.id);
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Hero removed from bookmarks'),
@@ -82,11 +86,12 @@ class _BookmarkPageState extends State<BookmarkPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => HeroDetailsModal(
-        hero: hero, 
-        apiToken: widget.apiToken,
-        onBookmarkRemoved: () => _removeBookmark(hero),
-      ),
+      builder:
+          (context) => HeroDetailsModal(
+            hero: hero,
+            apiToken: widget.apiToken,
+            onBookmarkRemoved: () => _removeBookmark(hero),
+          ),
     );
   }
 
@@ -136,8 +141,11 @@ class _BookmarkPageState extends State<BookmarkPage> {
             value: numValue / 100,
             backgroundColor: Colors.white.withOpacity(0.2),
             valueColor: AlwaysStoppedAnimation<Color>(
-              numValue > 70 ? Colors.greenAccent :
-              numValue > 40 ? Colors.orangeAccent : Colors.redAccent,
+              numValue > 70
+                  ? Colors.greenAccent
+                  : numValue > 40
+                  ? Colors.orangeAccent
+                  : Colors.redAccent,
             ),
             minHeight: 4,
           ),
@@ -164,7 +172,7 @@ class _BookmarkPageState extends State<BookmarkPage> {
               color: Colors.deepPurple.withOpacity(0.5),
               blurRadius: 10,
               spreadRadius: 1,
-            )
+            ),
           ],
         ),
         child: ClipRRect(
@@ -173,28 +181,25 @@ class _BookmarkPageState extends State<BookmarkPage> {
             fit: StackFit.expand,
             children: [
               // Hero Image with placeholder
-              hero.imageUrl.isNotEmpty 
+              hero.imageUrl.isNotEmpty
                   ? Image.network(
-                      hero.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                    )
+                    hero.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                  )
                   : _buildPlaceholderImage(),
-              
+
               // Dark overlay for better text visibility
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.7),
-                    ],
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                   ),
                 ),
               ),
-              
+
               // Content
               Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -205,7 +210,7 @@ class _BookmarkPageState extends State<BookmarkPage> {
                     child: Text(
                       hero.name,
                       style: GoogleFonts.bangers(
-                        fontSize: 22, 
+                        fontSize: 22,
                         color: Colors.white,
                         shadows: [
                           Shadow(
@@ -220,7 +225,7 @@ class _BookmarkPageState extends State<BookmarkPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  
+
                   // Power Stats at bottom
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -237,21 +242,21 @@ class _BookmarkPageState extends State<BookmarkPage> {
                         Text(
                           'Total Power: $totalPower',
                           style: GoogleFonts.poppins(
-                            fontSize: 14, 
-                            color: Colors.white, 
+                            fontSize: 14,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        ...hero.powerstats.entries
-                            .take(3)
-                            .map((e) => _buildPowerStatRow(e.key, e.value)),
+                        ...hero.powerstats.entries.map(
+                          (e) => _buildPowerStatRow(e.key, e.value),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              
+
               // Alignment indicator
               Positioned(
                 top: 8,
@@ -262,13 +267,14 @@ class _BookmarkPageState extends State<BookmarkPage> {
                     color: Colors.black.withOpacity(0.7),
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    hero.alignmentEmoji,
-                    style: const TextStyle(fontSize: 16),
+                  child: Icon(
+                    _getAlignmentIcon(hero.biography['alignment']),
+                    color: _getAlignmentColor(hero.biography['alignment']),
+                    size: 16,
                   ),
                 ),
               ),
-              
+
               // Remove bookmark button
               Positioned(
                 top: 8,
@@ -289,15 +295,39 @@ class _BookmarkPageState extends State<BookmarkPage> {
     );
   }
 
+  // Add these helper methods to both files:
+  IconData _getAlignmentIcon(String? alignment) {
+    switch (alignment?.toLowerCase()) {
+      case 'good':
+        return Icons.verified_user;
+      case 'bad':
+        return Icons.dangerous;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Color _getAlignmentColor(String? alignment) {
+    switch (alignment?.toLowerCase()) {
+      case 'good':
+        return Colors.blue;
+      case 'bad':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
-          builder: (BuildContext context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (BuildContext context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         centerTitle: true,
         title: const Text('Bookmarks'),
@@ -317,41 +347,46 @@ class _BookmarkPageState extends State<BookmarkPage> {
             colors: [Colors.deepPurple, Colors.purple],
           ),
         ),
-        child: _bookmarkedHeroes.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.bookmark_border,
-                      size: 64,
-                      color: Colors.white70,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No bookmarked heroes',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+        child:
+            _bookmarkedHeroes.isEmpty
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.bookmark_border,
+                        size: 64,
+                        color: Colors.white70,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'No bookmarked heroes',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    childAspectRatio: 0.7, // Increased from 0.5
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
+                  ),
+                  itemCount:
+                      _bookmarkedHeroes
+                          .length, // or _searchResults.length in search_page.dart
+                  itemBuilder: (context, index) {
+                    return _buildHeroCard(
+                      _bookmarkedHeroes[index],
+                    ); // or _searchResults[index]
+                  },
                 ),
-              )
-            : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 5,
-                  childAspectRatio: 0.5,
-                  crossAxisSpacing: 4,
-                  mainAxisSpacing: 4,
-                ),
-                itemCount: _bookmarkedHeroes.length,
-                itemBuilder: (context, index) {
-                  return _buildHeroCard(_bookmarkedHeroes[index]);
-                },
-              ),
       ),
     );
   }
@@ -393,13 +428,25 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
 
   Future<void> _loadAdditionalDetails() async {
     setState(() => _loadingDetails = true);
-    
+
     try {
-      final bio = await _service.fetchHeroDetails(widget.hero.id as int, 'biography');
-      final appearance = await _service.fetchHeroDetails(widget.hero.id as int, 'appearance');
-      final work = await _service.fetchHeroDetails(widget.hero.id as int, 'work');
-      final connections = await _service.fetchHeroDetails(widget.hero.id as int, 'connections');
-      
+      final bio = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'biography',
+      );
+      final appearance = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'appearance',
+      );
+      final work = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'work',
+      );
+      final connections = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'connections',
+      );
+
       setState(() {
         _biographyDetails = bio;
         _appearanceDetails = appearance;
@@ -410,9 +457,9 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     } catch (e) {
       setState(() => _loadingDetails = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load details: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load details: $e')));
       }
     }
   }
@@ -421,7 +468,9 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
     setState(() {
-      _isBookmarked = bookmarkedHeroes.any((h) => jsonDecode(h)['id'] == widget.hero.id);
+      _isBookmarked = bookmarkedHeroes.any(
+        (h) => jsonDecode(h)['id'] == widget.hero.id,
+      );
     });
   }
 
@@ -429,38 +478,41 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
     final heroJson = jsonEncode(widget.hero.toJson());
-    
+
     setState(() {
       if (_isBookmarked) {
-        bookmarkedHeroes.removeWhere((h) => jsonDecode(h)['id'] == widget.hero.id);
+        bookmarkedHeroes.removeWhere(
+          (h) => jsonDecode(h)['id'] == widget.hero.id,
+        );
         widget.onBookmarkRemoved?.call();
       } else {
         bookmarkedHeroes.add(heroJson);
       }
       _isBookmarked = !_isBookmarked;
     });
-    
+
     await prefs.setStringList(_bookmarksKey, bookmarkedHeroes);
-    
+
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isBookmarked 
-            ? 'Hero added to bookmarks' 
-            : 'Hero removed from bookmarks'),
+        content: Text(
+          _isBookmarked
+              ? 'Hero added to bookmarks'
+              : 'Hero removed from bookmarks',
+        ),
         backgroundColor: Colors.deepPurple,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
   Widget _buildDetailItem(String title, String? value) {
-    if (value == null || value.isEmpty || value == 'null') return const SizedBox();
-    
+    final displayValue = value ?? 'Unknown';
+    if (displayValue.isEmpty || displayValue == 'null') return const SizedBox();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -473,34 +525,43 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               color: Colors.deepPurple,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.black87),
-          ),
+          Text(displayValue, style: const TextStyle(color: Colors.black87)),
         ],
       ),
     );
   }
 
-  Widget _buildSection(String title, Map<String, dynamic>? data) {
+  Widget _buildSection(
+    String title,
+    Map<String, dynamic>? data, {
+    IconData? icon,
+  }) {
     if (data == null || data.isEmpty) return const SizedBox();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.deepPurple,
-          ),
+        Row(
+          children: [
+            if (icon != null) Icon(icon, color: Colors.deepPurple, size: 20),
+            if (icon != null) const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        ...data.entries.map((e) => _buildDetailItem(
-          e.key.replaceAll('-', ' ').toUpperCase(),
-          e.value?.toString(),
-        )),
+        ...data.entries.map(
+          (e) => _buildDetailItem(
+            e.key.replaceAll('-', ' ').toUpperCase(),
+            e.value?.toString(),
+          ),
+        ),
         const SizedBox(height: 16),
       ],
     );
@@ -508,6 +569,27 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine alignment icon and color
+    final alignment =
+        widget.hero.biography['alignment']?.toString().toLowerCase() ??
+        'neutral';
+    IconData alignmentIcon;
+    Color alignmentColor;
+
+    switch (alignment) {
+      case 'good':
+        alignmentIcon = Icons.verified_user;
+        alignmentColor = Colors.blue;
+        break;
+      case 'bad':
+        alignmentIcon = Icons.dangerous;
+        alignmentColor = Colors.red;
+        break;
+      default:
+        alignmentIcon = Icons.help_outline;
+        alignmentColor = Colors.grey;
+    }
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       padding: const EdgeInsets.all(16),
@@ -526,15 +608,19 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header with name and alignment
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  widget.hero.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                Icon(alignmentIcon, color: alignmentColor, size: 30),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    widget.hero.name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -548,7 +634,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Hero Image
             Center(
               child: Container(
@@ -563,75 +649,56 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
                   child: Image.network(
                     widget.hero.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.error_outline,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
+                    errorBuilder:
+                        (_, __, ___) => const Icon(
+                          Icons.error_outline,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Power Stats
-            const Text(
+            _buildSection(
               'POWER STATS',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
+              widget.hero.powerstats,
+              icon: Icons.bolt,
             ),
-            const SizedBox(height: 8),
-            ...widget.hero.powerstats.entries.map((e) {
-              final value = e.value is int ? e.value : int.tryParse(e.value.toString()) ?? 0;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        e.key.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(value.toString()),
-                    ],
-                  ),
-                  LinearProgressIndicator(
-                    value: value / 100,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      value > 70 ? Colors.green :
-                      value > 40 ? Colors.orange : Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              );
-            }),
-            const SizedBox(height: 16),
-            
-            // Additional Details
-            if (_loadingDetails)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              _buildSection('BIOGRAPHY', _biographyDetails),
-              _buildSection('APPEARANCE', _appearanceDetails),
-              _buildSection('WORK', _workDetails),
-              _buildSection('CONNECTIONS', _connectionsDetails),
-            ],
-            
+
+            // Biography
+            _buildSection('BIOGRAPHY', _biographyDetails, icon: Icons.info),
+
+            // Appearance
+            _buildSection('APPEARANCE', _appearanceDetails, icon: Icons.face),
+
+            // Work
+            _buildSection('WORK', _workDetails, icon: Icons.work),
+
+            // Connections
+            _buildSection(
+              'CONNECTIONS',
+              _connectionsDetails,
+              icon: Icons.people,
+            ),
+
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
                 ),
-                child: const Text('CLOSE', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'CLOSE',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'widgets/app_drawer.dart';
 import 'superhero_service.dart';
 import 'hero_card.dart';
+import 'package:flutter/material.dart';
 
 class SearchPage extends StatefulWidget {
   final String apiToken;
@@ -73,7 +74,7 @@ class _SearchPageState extends State<SearchPage> {
     if (hero.imageUrl.isEmpty || !hero.imageUrl.startsWith('http')) {
       return false;
     }
-    
+
     return hero.powerstats.values.any((value) {
       if (value is int) return value > 0;
       if (value is String) return (int.tryParse(value) ?? 0) > 0;
@@ -81,13 +82,38 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  // Add these helper methods to both files:
+  IconData _getAlignmentIcon(String? alignment) {
+    switch (alignment?.toLowerCase()) {
+      case 'good':
+        return Icons.verified_user;
+      case 'bad':
+        return Icons.dangerous;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Color _getAlignmentColor(String? alignment) {
+    switch (alignment?.toLowerCase()) {
+      case 'good':
+        return Colors.blue;
+      case 'bad':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Future<void> _toggleBookmark(HeroCard hero) async {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
     final heroJson = jsonEncode(hero.toJson());
-    
-    final isBookmarked = bookmarkedHeroes.any((h) => jsonDecode(h)['id'] == hero.id);
-    
+
+    final isBookmarked = bookmarkedHeroes.any(
+      (h) => jsonDecode(h)['id'] == hero.id,
+    );
+
     setState(() {
       if (isBookmarked) {
         bookmarkedHeroes.removeWhere((h) => jsonDecode(h)['id'] == hero.id);
@@ -95,21 +121,21 @@ class _SearchPageState extends State<SearchPage> {
         bookmarkedHeroes.add(heroJson);
       }
     });
-    
+
     await prefs.setStringList(_bookmarksKey, bookmarkedHeroes);
-    
+
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(isBookmarked 
-            ? 'Hero removed from bookmarks' 
-            : 'Hero added to bookmarks'),
+        content: Text(
+          isBookmarked
+              ? 'Hero removed from bookmarks'
+              : 'Hero added to bookmarks',
+        ),
         backgroundColor: Colors.deepPurple,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -125,7 +151,14 @@ class _SearchPageState extends State<SearchPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => HeroDetailsModal(hero: hero, apiToken: widget.apiToken),
+      builder:
+          (context) => HeroDetailsModal(
+            hero: hero,
+            apiToken: widget.apiToken,
+            onBookmarkRemoved: () {
+              setState(() {});
+            },
+          ),
     );
   }
 
@@ -175,8 +208,11 @@ class _SearchPageState extends State<SearchPage> {
             value: numValue / 100,
             backgroundColor: Colors.white.withOpacity(0.2),
             valueColor: AlwaysStoppedAnimation<Color>(
-              numValue > 70 ? Colors.greenAccent :
-              numValue > 40 ? Colors.orangeAccent : Colors.redAccent,
+              numValue > 70
+                  ? Colors.greenAccent
+                  : numValue > 40
+                  ? Colors.orangeAccent
+                  : Colors.redAccent,
             ),
             minHeight: 4,
           ),
@@ -196,7 +232,7 @@ class _SearchPageState extends State<SearchPage> {
       future: _isBookmarked(hero),
       builder: (context, snapshot) {
         final isBookmarked = snapshot.data ?? false;
-        
+
         return GestureDetector(
           onTap: () => _showHeroDetails(hero),
           child: Container(
@@ -208,7 +244,7 @@ class _SearchPageState extends State<SearchPage> {
                   color: Colors.deepPurple.withOpacity(0.5),
                   blurRadius: 10,
                   spreadRadius: 1,
-                )
+                ),
               ],
             ),
             child: ClipRRect(
@@ -217,14 +253,14 @@ class _SearchPageState extends State<SearchPage> {
                 fit: StackFit.expand,
                 children: [
                   // Hero Image with placeholder
-                  hero.imageUrl.isNotEmpty 
+                  hero.imageUrl.isNotEmpty
                       ? Image.network(
-                          hero.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                        )
+                        hero.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                      )
                       : _buildPlaceholderImage(),
-                  
+
                   // Dark overlay for better text visibility
                   Container(
                     decoration: BoxDecoration(
@@ -238,7 +274,7 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ),
                   ),
-                  
+
                   // Content
                   Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -249,7 +285,7 @@ class _SearchPageState extends State<SearchPage> {
                         child: Text(
                           hero.name,
                           style: GoogleFonts.bangers(
-                            fontSize: 22, 
+                            fontSize: 22,
                             color: Colors.white,
                             shadows: [
                               Shadow(
@@ -264,7 +300,7 @@ class _SearchPageState extends State<SearchPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      
+
                       // Power Stats at bottom
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -281,21 +317,21 @@ class _SearchPageState extends State<SearchPage> {
                             Text(
                               'Total Power: $totalPower',
                               style: GoogleFonts.poppins(
-                                fontSize: 14, 
-                                color: Colors.white, 
+                                fontSize: 14,
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            ...hero.powerstats.entries
-                                .take(3)
-                                .map((e) => _buildPowerStatRow(e.key, e.value)),
+                            ...hero.powerstats.entries.map(
+                              (e) => _buildPowerStatRow(e.key, e.value),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  
+
                   // Bookmark button
                   Positioned(
                     top: 8,
@@ -323,10 +359,11 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
-          builder: (BuildContext context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (BuildContext context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         centerTitle: true,
         title: const Text('Search Heroes'),
@@ -368,28 +405,34 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
             Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _searchResults.isEmpty
+              child:
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _searchResults.isEmpty
                       ? const Center(
-                          child: Text(
-                            'No results found',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(8),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            childAspectRatio: 0.5,
-                            crossAxisSpacing: 4,
-                            mainAxisSpacing: 4,
-                          ),
-                          itemCount: _searchResults.length,
-                          itemBuilder: (context, index) {
-                            return _buildHeroCard(_searchResults[index]);
-                          },
+                        child: Text(
+                          'No results found',
+                          style: TextStyle(color: Colors.white),
                         ),
+                      )
+                      : GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 5,
+                              childAspectRatio: 0.7, // Increased from 0.5
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 4,
+                            ),
+                        itemCount:
+                            _bookmarkedHeroes
+                                .length, // or _searchResults.length in search_page.dart
+                        itemBuilder: (context, index) {
+                          return _buildHeroCard(
+                            _bookmarkedHeroes[index],
+                          ); // or _searchResults[index]
+                        },
+                      ),
             ),
           ],
         ),
@@ -407,11 +450,13 @@ class _SearchPageState extends State<SearchPage> {
 class HeroDetailsModal extends StatefulWidget {
   final HeroCard hero;
   final String apiToken;
+  final VoidCallback? onBookmarkRemoved;
 
   const HeroDetailsModal({
     super.key,
     required this.hero,
     required this.apiToken,
+    this.onBookmarkRemoved,
   });
 
   @override
@@ -438,13 +483,25 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
 
   Future<void> _loadAdditionalDetails() async {
     setState(() => _loadingDetails = true);
-    
+
     try {
-      final bio = await _service.fetchHeroDetails(widget.hero.id as int, 'biography');
-      final appearance = await _service.fetchHeroDetails(widget.hero.id as int, 'appearance');
-      final work = await _service.fetchHeroDetails(widget.hero.id as int, 'work');
-      final connections = await _service.fetchHeroDetails(widget.hero.id as int, 'connections');
-      
+      final bio = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'biography',
+      );
+      final appearance = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'appearance',
+      );
+      final work = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'work',
+      );
+      final connections = await _service.fetchHeroDetails(
+        widget.hero.id as int,
+        'connections',
+      );
+
       setState(() {
         _biographyDetails = bio;
         _appearanceDetails = appearance;
@@ -455,9 +512,9 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     } catch (e) {
       setState(() => _loadingDetails = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load details: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load details: $e')));
       }
     }
   }
@@ -466,7 +523,9 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
     setState(() {
-      _isBookmarked = bookmarkedHeroes.any((h) => jsonDecode(h)['id'] == widget.hero.id);
+      _isBookmarked = bookmarkedHeroes.any(
+        (h) => jsonDecode(h)['id'] == widget.hero.id,
+      );
     });
   }
 
@@ -474,37 +533,41 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     final prefs = await SharedPreferences.getInstance();
     final bookmarkedHeroes = prefs.getStringList(_bookmarksKey) ?? [];
     final heroJson = jsonEncode(widget.hero.toJson());
-    
+
     setState(() {
       if (_isBookmarked) {
-        bookmarkedHeroes.removeWhere((h) => jsonDecode(h)['id'] == widget.hero.id);
+        bookmarkedHeroes.removeWhere(
+          (h) => jsonDecode(h)['id'] == widget.hero.id,
+        );
+        widget.onBookmarkRemoved?.call(); // Add this line
       } else {
         bookmarkedHeroes.add(heroJson);
       }
       _isBookmarked = !_isBookmarked;
     });
-    
+
     await prefs.setStringList(_bookmarksKey, bookmarkedHeroes);
-    
+
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isBookmarked 
-            ? 'Hero added to bookmarks' 
-            : 'Hero removed from bookmarks'),
+        content: Text(
+          _isBookmarked
+              ? 'Hero added to bookmarks'
+              : 'Hero removed from bookmarks',
+        ),
         backgroundColor: Colors.deepPurple,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
   Widget _buildDetailItem(String title, String? value) {
-    if (value == null || value.isEmpty || value == 'null') return const SizedBox();
-    
+    final displayValue = value ?? 'Unknown';
+    if (displayValue.isEmpty || displayValue == 'null') return const SizedBox();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -517,10 +580,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               color: Colors.deepPurple,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.black87),
-          ),
+          Text(displayValue, style: const TextStyle(color: Colors.black87)),
         ],
       ),
     );
@@ -528,7 +588,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
 
   Widget _buildSection(String title, Map<String, dynamic>? data) {
     if (data == null || data.isEmpty) return const SizedBox();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -541,10 +601,12 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
           ),
         ),
         const SizedBox(height: 8),
-        ...data.entries.map((e) => _buildDetailItem(
-          e.key.replaceAll('-', ' ').toUpperCase(),
-          e.value?.toString(),
-        )),
+        ...data.entries.map(
+          (e) => _buildDetailItem(
+            e.key.replaceAll('-', ' ').toUpperCase(),
+            e.value?.toString(),
+          ),
+        ),
         const SizedBox(height: 16),
       ],
     );
@@ -592,7 +654,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Hero Image
             Center(
               child: Container(
@@ -607,17 +669,18 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
                   child: Image.network(
                     widget.hero.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.error_outline,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
+                    errorBuilder:
+                        (_, __, ___) => const Icon(
+                          Icons.error_outline,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Power Stats
             const Text(
               'POWER STATS',
@@ -629,7 +692,10 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
             ),
             const SizedBox(height: 8),
             ...widget.hero.powerstats.entries.map((e) {
-              final value = e.value is int ? e.value : int.tryParse(e.value.toString()) ?? 0;
+              final value =
+                  e.value is int
+                      ? e.value
+                      : int.tryParse(e.value.toString()) ?? 0;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -647,8 +713,11 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
                     value: value / 100,
                     backgroundColor: Colors.grey[200],
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      value > 70 ? Colors.green :
-                      value > 40 ? Colors.orange : Colors.red,
+                      value > 70
+                          ? Colors.green
+                          : value > 40
+                          ? Colors.orange
+                          : Colors.red,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -656,7 +725,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               );
             }),
             const SizedBox(height: 16),
-            
+
             // Additional Details
             if (_loadingDetails)
               const Center(child: CircularProgressIndicator())
@@ -666,16 +735,22 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
               _buildSection('WORK', _workDetails),
               _buildSection('CONNECTIONS', _connectionsDetails),
             ],
-            
+
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
                 ),
-                child: const Text('CLOSE', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'CLOSE',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
