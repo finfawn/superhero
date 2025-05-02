@@ -30,8 +30,8 @@ class DiceWidget extends StatelessWidget {
   final bool isRolling;
 
   const DiceWidget({
-    super.key, 
-    required this.value, 
+    super.key,
+    required this.value,
     this.size = 60,
     this.isRolling = false,
   });
@@ -140,6 +140,31 @@ class _BattlegroundPageState extends State<BattlegroundPage>
       if (value is String) return sum + (int.tryParse(value) ?? 0);
       return sum;
     });
+  }
+
+  Future<void> _showExitConfirmation() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Exit App'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldExit ?? false) {
+      SystemNavigator.pop();
+    }
   }
 
   Widget _buildPlaceholderImage() {
@@ -663,8 +688,8 @@ class _BattlegroundPageState extends State<BattlegroundPage>
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.white),
-            onPressed: () => SystemNavigator.pop(),
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _showExitConfirmation,
           ),
         ],
       ),

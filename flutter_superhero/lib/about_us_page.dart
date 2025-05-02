@@ -38,7 +38,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
-            onPressed: () => SystemNavigator.pop(),
+            onPressed: _showExitConfirmation,
           ),
         ],
       ),
@@ -69,6 +69,32 @@ class _AboutUsPageState extends State<AboutUsPage> {
       ),
     );
   }
+
+  Future<void> _showExitConfirmation() async {
+  final shouldExit = await showDialog<bool>(
+    context: context,
+    builder:
+        (context) => AlertDialog(
+          title: const Text('Exit App'),
+          content: const Text('Are you sure you want to exit?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+  );
+
+  if (shouldExit ?? false) {
+    SystemNavigator.pop();
+  }
+}
+
 
   Widget _buildHeader() {
     return Column(

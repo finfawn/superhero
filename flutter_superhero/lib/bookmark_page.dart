@@ -29,6 +29,31 @@ class _BookmarkPageState extends State<BookmarkPage> {
     _loadBookmarks();
   }
 
+  Future<void> _showExitConfirmation() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Exit App'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldExit ?? false) {
+      SystemNavigator.pop();
+    }
+  }
+
   Future<void> _loadBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
     final bookmarked = prefs.getStringList(_bookmarksKey) ?? [];
@@ -334,7 +359,7 @@ class _BookmarkPageState extends State<BookmarkPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
-            onPressed: () => SystemNavigator.pop(),
+            onPressed: _showExitConfirmation,
           ),
         ],
       ),
@@ -427,26 +452,17 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
   }
 
   Future<void> _loadAdditionalDetails() async {
-    setState(() => _loadingDetails = true);
+  if (!mounted) return; // Ensure widget is still in the tree
 
-    try {
-      final bio = await _service.fetchHeroDetails(
-        widget.hero.id as int,
-        'biography',
-      );
-      final appearance = await _service.fetchHeroDetails(
-        widget.hero.id as int,
-        'appearance',
-      );
-      final work = await _service.fetchHeroDetails(
-        widget.hero.id as int,
-        'work',
-      );
-      final connections = await _service.fetchHeroDetails(
-        widget.hero.id as int,
-        'connections',
-      );
+  setState(() => _loadingDetails = true);
 
+  try {
+    final bio = await _service.fetchHeroDetails(widget.hero.id as int, 'biography');
+    final appearance = await _service.fetchHeroDetails(widget.hero.id as int, 'appearance');
+    final work = await _service.fetchHeroDetails(widget.hero.id as int, 'work');
+    final connections = await _service.fetchHeroDetails(widget.hero.id as int, 'connections');
+
+    if (mounted) {
       setState(() {
         _biographyDetails = bio;
         _appearanceDetails = appearance;
@@ -454,15 +470,17 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
         _connectionsDetails = connections;
         _loadingDetails = false;
       });
-    } catch (e) {
+    }
+  } catch (e) {
+    if (mounted) {
       setState(() => _loadingDetails = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load details: $e')));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading details: $e')),
+      );
+      debugPrint('Error loading hero details: $e'); // Debug log
     }
   }
+}
 
   Future<void> _checkIfBookmarked() async {
     final prefs = await SharedPreferences.getInstance();
@@ -556,12 +574,47 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
           ],
         ),
         const SizedBox(height: 8),
-        ...data.entries.map(
-          (e) => _buildDetailItem(
-            e.key.replaceAll('-', ' ').toUpperCase(),
-            e.value?.toString(),
+        if (title == 'POWER STATS')
+          ...data.entries.map((e) {
+            final value =
+                e.value is int
+                    ? e.value
+                    : int.tryParse(e.value.toString()) ?? 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      e.key.toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(value.toString()),
+                  ],
+                ),
+                LinearProgressIndicator(
+                  value: value / 100,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    value > 70
+                        ? Colors.green
+                        : value > 40
+                        ? Colors.orange
+                        : Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          })
+        else
+          ...data.entries.map(
+            (e) => _buildDetailItem(
+              e.key.replaceAll('-', ' ').toUpperCase(),
+              e.value?.toString(),
+            ),
           ),
-        ),
         const SizedBox(height: 16),
       ],
     );
