@@ -57,7 +57,7 @@ class SuperheroService {
     }
   }
 
-  // Add this method to SuperheroService class
+
   Future<Map<String, dynamic>> fetchHeroDetails(int id, String endpoint) async {
     final url = 'https://superheroapi.com/api/$apiToken/$id/$endpoint';
 

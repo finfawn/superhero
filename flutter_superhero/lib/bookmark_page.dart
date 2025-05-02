@@ -8,6 +8,29 @@ import 'widgets/app_drawer.dart';
 import 'hero_card.dart';
 import 'superhero_service.dart';
 
+// Shared helper methods
+IconData getAlignmentIcon(String? alignment) {
+  switch (alignment?.toLowerCase()) {
+    case 'good':
+      return Icons.verified_user;
+    case 'bad':
+      return Icons.dangerous;
+    default:
+      return Icons.help_outline;
+  }
+}
+
+Color getAlignmentColor(String? alignment) {
+  switch (alignment?.toLowerCase()) {
+    case 'good':
+      return Colors.blue;
+    case 'bad':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
 class BookmarkPage extends StatefulWidget {
   final String apiToken;
 
@@ -32,21 +55,20 @@ class _BookmarkPageState extends State<BookmarkPage> {
   Future<void> _showExitConfirmation() async {
     final shouldExit = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Exit App'),
-            content: const Text('Are you sure you want to exit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Yes'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
     );
 
     if (shouldExit ?? false) {
@@ -59,25 +81,24 @@ class _BookmarkPageState extends State<BookmarkPage> {
     final bookmarked = prefs.getStringList(_bookmarksKey) ?? [];
 
     setState(() {
-      _bookmarkedHeroes =
-          bookmarked
-              .map((String heroJson) {
-                try {
-                  final Map<String, dynamic> heroMap = json.decode(heroJson);
-                  return HeroCard.fromJson(heroMap);
-                } catch (e) {
-                  return HeroCard(
-                    id: 'error',
-                    name: 'Invalid Hero',
-                    imageUrl: '',
-                    powerstats: {},
-                    biography: {},
-                    alignmentEmoji: '❓',
-                  );
-                }
-              })
-              .where((hero) => hero.id.isNotEmpty)
-              .toList();
+      _bookmarkedHeroes = bookmarked
+          .map((String heroJson) {
+            try {
+              final Map<String, dynamic> heroMap = json.decode(heroJson);
+              return HeroCard.fromJson(heroMap);
+            } catch (e) {
+              return HeroCard(
+                id: 'error',
+                name: 'Invalid Hero',
+                imageUrl: '',
+                powerstats: {},
+                biography: {},
+                alignmentEmoji: '❓',
+              );
+            }
+          })
+          .where((hero) => hero.id.isNotEmpty)
+          .toList();
     });
   }
 
@@ -111,12 +132,11 @@ class _BookmarkPageState extends State<BookmarkPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => HeroDetailsModal(
-            hero: hero,
-            apiToken: widget.apiToken,
-            onBookmarkRemoved: () => _removeBookmark(hero),
-          ),
+      builder: (context) => HeroDetailsModal(
+        hero: hero,
+        apiToken: widget.apiToken,
+        onBookmarkRemoved: () => _removeBookmark(hero),
+      ),
     );
   }
 
@@ -169,8 +189,8 @@ class _BookmarkPageState extends State<BookmarkPage> {
               numValue > 70
                   ? Colors.greenAccent
                   : numValue > 40
-                  ? Colors.orangeAccent
-                  : Colors.redAccent,
+                      ? Colors.orangeAccent
+                      : Colors.redAccent,
             ),
             minHeight: 4,
           ),
@@ -208,10 +228,10 @@ class _BookmarkPageState extends State<BookmarkPage> {
               // Hero Image with placeholder
               hero.imageUrl.isNotEmpty
                   ? Image.network(
-                    hero.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                  )
+                      hero.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                    )
                   : _buildPlaceholderImage(),
 
               // Dark overlay for better text visibility
@@ -293,8 +313,8 @@ class _BookmarkPageState extends State<BookmarkPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _getAlignmentIcon(hero.biography['alignment']),
-                    color: _getAlignmentColor(hero.biography['alignment']),
+                    getAlignmentIcon(hero.biography['alignment']),
+                    color: getAlignmentColor(hero.biography['alignment']),
                     size: 16,
                   ),
                 ),
@@ -320,36 +340,12 @@ class _BookmarkPageState extends State<BookmarkPage> {
     );
   }
 
-  // Add these helper methods to both files:
-  IconData _getAlignmentIcon(String? alignment) {
-    switch (alignment?.toLowerCase()) {
-      case 'good':
-        return Icons.verified_user;
-      case 'bad':
-        return Icons.dangerous;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  Color _getAlignmentColor(String? alignment) {
-    switch (alignment?.toLowerCase()) {
-      case 'good':
-        return Colors.blue;
-      case 'bad':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
-          builder:
-              (BuildContext context) => IconButton(
+          builder: (BuildContext context) => IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
@@ -372,46 +368,41 @@ class _BookmarkPageState extends State<BookmarkPage> {
             colors: [Colors.deepPurple, Colors.purple],
           ),
         ),
-        child:
-            _bookmarkedHeroes.isEmpty
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.bookmark_border,
-                        size: 64,
-                        color: Colors.white70,
+        child: _bookmarkedHeroes.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.bookmark_border,
+                      size: 64,
+                      color: Colors.white70,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No bookmarked heroes',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No bookmarked heroes',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    childAspectRatio: 0.7, // Increased from 0.5
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4,
-                  ),
-                  itemCount:
-                      _bookmarkedHeroes
-                          .length, // or _searchResults.length in search_page.dart
-                  itemBuilder: (context, index) {
-                    return _buildHeroCard(
-                      _bookmarkedHeroes[index],
-                    ); // or _searchResults[index]
-                  },
+                    ),
+                  ],
                 ),
+              )
+            : GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  childAspectRatio: 0.7,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: _bookmarkedHeroes.length,
+                itemBuilder: (context, index) {
+                  return _buildHeroCard(_bookmarkedHeroes[index]);
+                },
+              ),
       ),
     );
   }
@@ -452,35 +443,39 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
   }
 
   Future<void> _loadAdditionalDetails() async {
-  if (!mounted) return; // Ensure widget is still in the tree
+    if (!mounted) return;
 
-  setState(() => _loadingDetails = true);
+    setState(() => _loadingDetails = true);
 
-  try {
-    final bio = await _service.fetchHeroDetails(widget.hero.id as int, 'biography');
-    final appearance = await _service.fetchHeroDetails(widget.hero.id as int, 'appearance');
-    final work = await _service.fetchHeroDetails(widget.hero.id as int, 'work');
-    final connections = await _service.fetchHeroDetails(widget.hero.id as int, 'connections');
+    try {
+      final heroId = int.parse(widget.hero.id);
+      
+      final bio = await _service.fetchHeroDetails(heroId, 'biography');
+      final appearance = await _service.fetchHeroDetails(heroId, 'appearance');
+      final work = await _service.fetchHeroDetails(heroId, 'work');
+      final connections = await _service.fetchHeroDetails(heroId, 'connections');
 
-    if (mounted) {
-      setState(() {
-        _biographyDetails = bio;
-        _appearanceDetails = appearance;
-        _workDetails = work;
-        _connectionsDetails = connections;
-        _loadingDetails = false;
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      setState(() => _loadingDetails = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading details: $e')),
-      );
-      debugPrint('Error loading hero details: $e'); // Debug log
+      if (mounted) {
+        setState(() {
+          _biographyDetails = bio;
+          _appearanceDetails = appearance;
+          _workDetails = work;
+          _connectionsDetails = connections;
+          _loadingDetails = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingDetails = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading details: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
-}
 
   Future<void> _checkIfBookmarked() async {
     final prefs = await SharedPreferences.getInstance();
@@ -516,10 +511,7 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _isBookmarked
-              ? 'Hero added to bookmarks'
-              : 'Hero removed from bookmarks',
-        ),
+          _isBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks'),
         backgroundColor: Colors.deepPurple,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -527,94 +519,184 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
     );
   }
 
-  Widget _buildDetailItem(String title, String? value) {
+  Widget _buildDetailCard(String title, String? value, {IconData? icon}) {
     final displayValue = value ?? 'Unknown';
     if (displayValue.isEmpty || displayValue == 'null') return const SizedBox();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.deepPurple.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(icon, size: 20, color: Colors.deepPurple),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    displayValue,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(displayValue, style: const TextStyle(color: Colors.black87)),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSection(
-    String title,
-    Map<String, dynamic>? data, {
-    IconData? icon,
-  }) {
+  Widget _buildPowerStatCard(String label, dynamic value) {
+    final numValue = value is int ? value : int.tryParse(value.toString()) ?? 0;
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.deepPurple.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+                Text(
+                  numValue.toString(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: numValue / 100,
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                numValue > 70
+                    ? Colors.green
+                    : numValue > 40
+                        ? Colors.orange
+                        : Colors.red,
+              ),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForDetail(String key) {
+    switch (key.toLowerCase()) {
+      case 'full-name':
+        return Icons.person;
+      case 'alter-egos':
+        return Icons.masks;
+      case 'aliases':
+        return Icons.people_alt;
+      case 'place-of-birth':
+        return Icons.place;
+      case 'first-appearance':
+        return Icons.calendar_today;
+      case 'publisher':
+        return Icons.business;
+      case 'alignment':
+        return Icons.verified;
+      case 'gender':
+        return Icons.transgender;
+      case 'race':
+        return Icons.people;
+      case 'height':
+        return Icons.height;
+      case 'weight':
+        return Icons.monitor_weight;
+      case 'eye-color':
+        return Icons.remove_red_eye;
+      case 'hair-color':
+        return Icons.face_retouching_natural;
+      case 'occupation':
+        return Icons.work;
+      case 'base':
+        return Icons.home;
+      case 'group-affiliation':
+        return Icons.groups;
+      case 'relatives':
+        return Icons.family_restroom;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Widget _buildSection(String title, Map<String, dynamic>? data, {IconData? icon}) {
     if (data == null || data.isEmpty) return const SizedBox();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (icon != null) Icon(icon, color: Colors.deepPurple, size: 20),
-            if (icon != null) const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              if (icon != null)
+                Icon(icon, color: Colors.deepPurple, size: 24),
+              if (icon != null) const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (title == 'POWER STATS')
-          ...data.entries.map((e) {
-            final value =
-                e.value is int
-                    ? e.value
-                    : int.tryParse(e.value.toString()) ?? 0;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      e.key.toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(value.toString()),
-                  ],
-                ),
-                LinearProgressIndicator(
-                  value: value / 100,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    value > 70
-                        ? Colors.green
-                        : value > 40
-                        ? Colors.orange
-                        : Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            );
-          })
-        else
-          ...data.entries.map(
-            (e) => _buildDetailItem(
-              e.key.replaceAll('-', ' ').toUpperCase(),
-              e.value?.toString(),
-            ),
+            ],
           ),
+        ),
+        if (title == 'POWER STATS')
+          ...data.entries.map((e) => _buildPowerStatCard(e.key, e.value))
+        else
+          ...data.entries.map((e) => _buildDetailCard(
+                e.key.replaceAll('-', ' '),
+                e.value?.toString(),
+                icon: _getIconForDetail(e.key),
+              )),
         const SizedBox(height: 16),
       ],
     );
@@ -622,27 +704,6 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine alignment icon and color
-    final alignment =
-        widget.hero.biography['alignment']?.toString().toLowerCase() ??
-        'neutral';
-    IconData alignmentIcon;
-    Color alignmentColor;
-
-    switch (alignment) {
-      case 'good':
-        alignmentIcon = Icons.verified_user;
-        alignmentColor = Colors.blue;
-        break;
-      case 'bad':
-        alignmentIcon = Icons.dangerous;
-        alignmentColor = Colors.red;
-        break;
-      default:
-        alignmentIcon = Icons.help_outline;
-        alignmentColor = Colors.grey;
-    }
-
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       padding: const EdgeInsets.all(16),
@@ -661,18 +722,16 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with name and alignment
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(alignmentIcon, color: alignmentColor, size: 30),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     widget.hero.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.bangers(
+                      fontSize: 28,
                       color: Colors.deepPurple,
+                      letterSpacing: 1.5,
                     ),
                   ),
                 ),
@@ -688,54 +747,79 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
             ),
             const SizedBox(height: 16),
 
-            // Hero Image
+            // Hero Image with alignment indicator
             Center(
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.deepPurple, width: 2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    widget.hero.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (_, __, ___) => const Icon(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.deepPurple, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        widget.hero.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
                           Icons.error_outline,
                           size: 50,
                           color: Colors.grey,
                         ),
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        getAlignmentIcon(widget.hero.biography['alignment']),
+                        color: getAlignmentColor(widget.hero.biography['alignment']),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // Power Stats
+            // Power Stats (always shown)
             _buildSection(
               'POWER STATS',
               widget.hero.powerstats,
               icon: Icons.bolt,
             ),
 
-            // Biography
-            _buildSection('BIOGRAPHY', _biographyDetails, icon: Icons.info),
+            // Loading indicator for additional details
+            if (_loadingDetails)
+              const Center(child: CircularProgressIndicator()),
 
-            // Appearance
-            _buildSection('APPEARANCE', _appearanceDetails, icon: Icons.face),
-
-            // Work
-            _buildSection('WORK', _workDetails, icon: Icons.work),
-
-            // Connections
-            _buildSection(
-              'CONNECTIONS',
-              _connectionsDetails,
-              icon: Icons.people,
-            ),
+            // Additional details (shown when loaded)
+            if (_biographyDetails != null)
+              _buildSection('BIOGRAPHY', _biographyDetails, icon: Icons.info),
+            if (_appearanceDetails != null)
+              _buildSection('APPEARANCE', _appearanceDetails, icon: Icons.face),
+            if (_workDetails != null)
+              _buildSection('WORK', _workDetails, icon: Icons.work),
+            if (_connectionsDetails != null)
+              _buildSection('CONNECTIONS', _connectionsDetails, icon: Icons.people),
 
             const SizedBox(height: 20),
             Center(
@@ -743,14 +827,18 @@ class _HeroDetailsModalState extends State<HeroDetailsModal> {
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  elevation: 5,
                 ),
-                child: const Text(
+                child: Text(
                   'CLOSE',
-                  style: TextStyle(color: Colors.white),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
