@@ -247,34 +247,64 @@ class _BattlegroundPageState extends State<BattlegroundPage>
         _diceAnimationValue = 1;
       });
     } else {
-      // Computer rolls automatically
-      final random = Random();
-      _diceRoll = random.nextInt(6) + 1;
-      _showDiceResult = true;
+      // Computer rolls with animation
+      setState(() {
+        _isDiceRolling = true;
+        _diceAnimationValue = 1;
+        _diceResultMessage = 'Computer is rolling...';
+        _showDiceResultModal = true;
+      });
 
-      await Future.delayed(const Duration(seconds: 1));
-      await _drawCardsForWinner(isPlayerWinner, _diceRoll!);
+      final random = Random();
+
+      // Animate dice rolling
+      for (int i = 0; i < 15; i++) {
+        if (!mounted) return;
+        setState(() {
+          _diceAnimationValue = random.nextInt(6) + 1;
+        });
+        await Future.delayed(Duration(milliseconds: 100 + (i * 10)));
+      }
+
+      // Final dice value
+      _diceRoll = random.nextInt(6) + 1;
+      setState(() {
+        _diceAnimationValue = _diceRoll!;
+        _diceResultMessage =
+            'Computer rolled a $_diceRoll!\nComputer receives $_diceRoll new cards!';
+        _isDiceRolling = false;
+      });
+
+      await Future.delayed(
+        const Duration(seconds: 2),
+      ); // Show result for 2 seconds
+
+      setState(() {
+        _showDiceResultModal = false;
+      });
+
+      await _drawCardsForWinner(false, _diceRoll!);
     }
   }
 
   Future<void> _playerRollDice() async {
     setState(() {
       _isDiceRolling = true;
-      _showDiceRollModal = false;
+      _showDiceRollModal = false; // Hide the roll prompt modal
+      _showDiceResultModal = true; // Show the result modal
+      _diceAnimationValue = 1;
+      _diceResultMessage = 'Rolling...';
     });
 
     final random = Random();
 
     // Animate dice rolling with more visual feedback
     for (int i = 0; i < 15; i++) {
-      // Increased from 10 to 15 for longer animation
       if (!mounted) return;
       setState(() {
         _diceAnimationValue = random.nextInt(6) + 1;
       });
-      await Future.delayed(
-        Duration(milliseconds: 100 + (i * 10)),
-      ); // Slowing down
+      await Future.delayed(Duration(milliseconds: 100 + (i * 10)));
     }
 
     // Final dice value
@@ -283,7 +313,7 @@ class _BattlegroundPageState extends State<BattlegroundPage>
       _diceAnimationValue = _diceRoll!;
       _diceResultMessage =
           'You rolled a $_diceRoll!\nYou receive $_diceRoll new cards!';
-      _showDiceResultModal = true;
+      _isDiceRolling = false;
     });
 
     await Future.delayed(
@@ -328,10 +358,31 @@ class _BattlegroundPageState extends State<BattlegroundPage>
           _loading = false;
           _showDiceResult = false;
         });
+
+        // Show success message
+        setState(() {
+          _diceResultMessage =
+              isPlayerWinner
+                  ? 'Added $_diceRoll new cards to your deck!'
+                  : 'Computer added $_diceRoll new cards to its deck!';
+          _showDiceResultModal = true;
+        });
+
+        await Future.delayed(const Duration(seconds: 2));
+        setState(() {
+          _showDiceResultModal = false;
+        });
       } else {
         setState(() {
           _loading = false;
           _showDiceResult = false;
+          _diceResultMessage = 'No new cards available!';
+          _showDiceResultModal = true;
+        });
+
+        await Future.delayed(const Duration(seconds: 2));
+        setState(() {
+          _showDiceResultModal = false;
         });
       }
     } catch (e) {
@@ -343,15 +394,6 @@ class _BattlegroundPageState extends State<BattlegroundPage>
         context,
       ).showSnackBar(SnackBar(content: Text('Error drawing new cards: $e')));
     }
-    setState(() {
-      _showDiceResult = true;
-      _diceResultMessage = 'Added $_diceRoll new cards to your deck!';
-    });
-
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _showDiceResult = false;
-    });
   }
 
   Widget _buildPowerStatRow(String label, dynamic value) {
@@ -949,7 +991,7 @@ class _BattlegroundPageState extends State<BattlegroundPage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'DICE RESULT',
+                        _isDiceRolling ? 'DICE ROLLING' : 'DICE RESULT',
                         style: GoogleFonts.bangers(
                           fontSize: 28,
                           color: Colors.amber,
